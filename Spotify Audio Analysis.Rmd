@@ -1,0 +1,154 @@
+---
+title: "Spotify Audio Feature"
+author: "Faathir Chikal Asyuraa"
+date: "10/5/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+SpotifyR adalah package untuk mengambil data dari API Spotify
+
+Contoh data yang tersedia di API Spotify dapat di cek di https://musicaldata.com/
+
+```{r}
+library(spotifyr)
+```
+Untuk dapat menggunakan API Spotify, anda diperlukan untuk membuat akun di developer.spotify.com.
+
+Kunjungi https://developer.spotify.com/dashboard/login dan login dengan akun spotify anda, serta buatlah Client ID. Client ID dan Secret ID akan diperlukan untuk meng authorisasi pekerjaan anda dengan SpotifyR
+
+```{r}
+Sys.setenv(SPOTIFY_CLIENT_ID = '0b559c797211429f8d4c16cc2d42bd56') #Ganti dengan Client ID anda
+Sys.setenv(SPOTIFY_CLIENT_SECRET = 'd52a0861080248e1b59f466e891efbdb') #Ganti dengan Secret ID anda
+access_token <- get_spotify_access_token(client_id = Sys.getenv('SPOTIFY_CLIENT_ID'), client_secret = Sys.getenv('SPOTIFY_CLIENT_SECRET'))
+```
+
+Untuk mendapatkan fitur audio dari artis tertentu, anda cukup menjalankan get_artist_audio_features('nama artis'), contohnya
+```{r}
+peterpan <- get_artist_audio_features('peterpan')
+```
+
+spotifyr akan mengambil semua data yang berkaitan dengan artis tersebut, untuk melihat variabel apa saja yang diambil oleh spotifyr, dapat dilihat dengan
+```{r}
+colnames(peterpan)
+```
+Untuk analisa kali ini, hanya akan diambil beberapa kolom, yaitu
+
+track_name = judul lagu
+album_name = nama album
+album_release_year = tahun rilis album
+danceability = seberapa cocok lagu tersebut untuk berdansa [0-1]
+energy = seberapa enerjik lagu tersebut [0=1]
+loudness = seberapa kencang lagu tersebut (dalam desibel)
+speechiness = seberapa besar presensi dari banyaknya kalimat yang diucapkan [0-1], semakin mendekati 1, maka lagu lebih cenderung terdiri atas pelafalan kata dibandingkan suara instrumen
+accousticness = seberapa akustik lagu tersebut [0-1]
+liveness = seberapa mungkin bahwa lagu tersebut merupakan rekaman dari siaran langsung [0-1]
+valence = seberapa positif lagu tersebut terdengar [0-1]
+tempo = tempo (bpm)
+duration_ms = durasi lagu (milisekon)
+```{r}
+library(tidyverse)
+peterpan <- peterpan %>% select(track_name,album_name,album_release_year,danceability,energy,loudness,speechiness,acousticness,instrumentalness,liveness,valence,tempo,duration_ms)
+```
+```{r}
+unique(peterpan$album_name)
+```
+Sepertinya ada album yang duplikat (Alexandria), akan dipilih album OST. Alexandria (album "Alexandria (Original Motion Picture Soundtrack)" akan di drop)
+
+```{r}
+peterpan<-peterpan%>%filter(album_name != "Alexandria (Original Motion Picture Soundtrack)")
+```
+Akan divisualisasikan bagaimana tingkat valence tiap album, menggunakan joyplot / ridgeplot
+
+```{r}
+library(ggjoy) 
+
+ggplot(peterpan, aes(x = valence, y = album_name,fill=album_name)) +#memvisualisasikan valence berdasarkan album
+  geom_joy() + 
+  theme_joy() +
+  theme(legend.position = "none")+
+  ggtitle("Joyplot of Peterpan's joy distributions", subtitle = "Based on valence pulled from Spotify's Web API with spotifyr")
+```
+Dapat dilihat bahwa album remix cenderung lebih positif, namun untuk album lainnya cenderung tidak terlalu berbeda
+
+Anda dapat bereksperimen untuk membandingkan komponen audio lainnya, misalnya energy
+```{r}
+ggplot(peterpan, aes(x = energy, y = album_name,fill=album_name)) +#memvisualisasikan energy berdasarkan album
+  geom_joy() + 
+  theme_joy() +
+  theme(legend.position = "none")+
+  ggtitle("Joyplot of Peterpan's energy distributions", subtitle = "Based on energy pulled from Spotify's Web API with spotifyr")
+```
+Kita juga dapat membuat visualisasi interaktif dari data peterpan dengan menggunakan package plotly
+```{r}
+library(plotly)
+
+density_danceability_peterpan <- ggplot(peterpan, aes(x=danceability, fill=album_name,
+                            text = paste(album_name)))+
+  geom_density(alpha=0.7, color=NA)+
+  labs(x="Danceability", y="Density") +
+  guides(fill=guide_legend(title="Album"))+
+  theme_minimal()+
+  ggtitle("Distribution of Danceability Data")
+ggplotly(density_danceability_peterpan, tooltip=c("text"))
+```
+
+Visualisasi alternatif adalah dumbbell plot, yang digunakan untuk melihat rentang minimum - maksimum suatu ukuran, akan di visualisasikan rentang tempo tiap album
+
+```{r}
+peterpan_tempo <- peterpan %>%
+  group_by(album_name)%>% #di grup berdasarkan album
+  mutate(max=max(tempo))%>% #membuat kolom maksimum
+  mutate(min=min(tempo))%>% #membuat kolom minimum
+  select(album_name, max, min)%>%
+  unique()
+```
+
+
+```{r}
+dumbbell_tempo_peterpan <- plot_ly(peterpan_tempo, color = I("gray80"),  
+                hoverinfo = 'text') %>%
+  add_segments(x = ~max, xend = ~min, y = ~album_name, yend = ~album_name, showlegend = FALSE) %>%
+  add_markers(x = ~max, y = ~album_name, name = "Maximum Tempo Value",color='red', text=~paste('Max Tempo: ', max)) %>%
+  add_markers(x = ~min, y = ~album_name, name = "Minimum Tempo Value",color='blue', text=~paste('Min Tempo: ', min))%>%
+  layout(
+    title = "Album Tempo Range",
+    xaxis = list(title = "Tempo"),
+    yaxis= list(title=""))
+ggplotly(dumbbell_tempo_peterpan)
+```
+Untuk melihat bagaimana mood tiap lagu, dapat digunakan kombinasi dari valence dan energy
+
+```{r}
+energy_by_valence_peterpan<-ggplot(peterpan,aes(x=valence,y=energy,color=album_name,text=paste(track_name,'-',album_name,'(',album_release_year,')')))+geom_point()+guides(fill=guide_legend(title="Album_Name"))
+ggplotly(energy_by_valence_peterpan,tooltip=c("text"))
+```
+Terakhir, untuk merangkum karateristik audio tiap album, akan dibuat radar chart yang merepresentasikan setiap karaterisik audio
+
+```{r}
+library(radarchart)
+
+#Akan di agregat nilai mean dari tiap karateristik per albumnya
+peterpan_album<-peterpan %>% group_by(album_name) %>% summarise(danceability=mean(danceability),
+                                                                energy=mean(energy),
+                                                                speechiness=mean(speechiness),
+                                                                acousticness=mean(acousticness),
+                                                                instrumentalness=mean(instrumentalness),
+                                                                liveness=mean(liveness),
+                                                                valence=mean(valence))
+```
+
+Dibutuhkan beberapa modifikasi pada dataframe, agar mendapatkan radar plot dengan setiap sumbu adalah karateristik audio. langkah yang dibutuhkan adalah men-transpose dataframe
+
+```{r}
+peterpan_album.T<-t(peterpan_album[,2:ncol(peterpan_album)])
+colnames(peterpan_album.T) <- peterpan_album$album_name 
+peterpan_album.T<-data.frame(peterpan_album.T)
+peterpan_album.T<- cbind(rownames(peterpan_album.T),peterpan_album.T)
+
+#visualisasi radar plot
+chartJSRadar(peterpan_album.T)
+```
