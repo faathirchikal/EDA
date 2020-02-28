@@ -1,0 +1,663 @@
+---
+title: "Exploratory Data Analysis in R"
+date: "Faathir Chikal Asyuraa"
+output:
+  rmdformats::material:
+    highlight: kate
+    toc_float: true
+    df_print: paged
+    fig_width: 10
+    fig_height: 6
+    fig_caption: True
+    code_folding: "hide" # Hiding codes
+---
+# Introduction to Exploratory Data Analysis (EDA) in R
+
+![](Illustration/Screenshot_2.jpg)
+
+## Apa yang dimaksud Exploratory Data Analysis
+Exploratory Data Analysis (EDA) merupakan serangkaian langkah untuk mengenal lebih jauh data yang anda miliki, istilah Eksplor digunakan untuk mencoba menjelajahi bagaimana bentuk data, hubungan hubungan yang ada pada data, ataupun hanya sekedar ingin tahu bagaimana nilai nilai yang ada pada data yang kita miliki.
+
+## Manfaat dan Tujuan dari EDA
+EDA sangat penting sebelum kita langsung terjun ke membuat model ataupun analisa kompleks lainnya, EDA bekerja sebagai fondasi awal untuk mengetahui apa aja sih yang bisa kita kerjakan dari data yang kita miliki, hipotesa hipotesa apa saja yang bisa di eksplor dari data yang kita punya. Seringkali dengan melakukan eksplorasi data, banyak sekali insight yang bisa didapat.
+
+
+## Contoh langkah dalam EDA
+- Memastikan tipe data yang disajikan sudah tepat
+- Melihat apakah ada penulisan 'aneh' pada data
+- Melihat apakah ada nilai nilai yang hilang dari data (missing value)
+- Melihat apakah di data yang kita punya terdapat nilai nilai yang ekstrim (outlier)
+- Melihat relasi antara variabel yang hadir
+- Membuat visualisasi ringkas untuk merangkum info info menarik pada data
+
+## Library yang digunakan
+```{r message=FALSE, warning=FALSE}
+library(tidyverse) # Pengolahan Data dan Visualisasi Dasar
+library(naniar) # Visualisasi Missing Value
+library(plotly) # Visualisasi Interaktif
+library(gapminder) # Dataset Gapminder
+library(visdat)
+library(reshape)
+library(ggalt)
+library(readxl)
+```
+
+# Initial Data Analysis
+
+## Memastikan data yang terinput sudah benar
+Yang dimaksud dengan sudah benar adalah apakah setiap variabel tidak memiliki nilai yang 'aneh'
+
+Jika didapatkan nilai yang aneh, bagaimana seharusnya kita menghandle nilai tersebut?
+
+## Memastikan tipe data sudah sesuai
+Memastikan tipe data apakah sudah sesuai apa belum merupakan step krusial pertama, dikarenakan tipe data yang berbeda akan diperlakukan berbeda pula di R, walaupun isinya tetap sama. 
+
+### Tipe Data dalam R
+Tipe-tipe data yang umum dalam R adalah:
+
+- Numeric
+- Integer
+- Factor / Kategorik, dapat mempunyai Order / Urutan maupun tidak.
+- Character / teks
+- Logical
+- dan tipe data lainnya
+
+Mengetahui tipe tipe data ini sangat penting dalam sebelum memulai analisis, pastikan tipe data dari masing masing variabel sudah tepat, berikut definisi dan contoh dari tipe data tersebut:
+
+* Factor (Nominal), Data Kategorik yang tidak dapat diurutkan, i.e tipe mobil (SUV, Bus, etc), Gender, 
+* Ordered Factor (Ordinal), Data Kategorik yang dapat diurutkan, i.e level edukasi (Kindergarden, Elementary School, etc
+
+### Study Case
+Berikut disajikan data
+```{r}
+aqi<-read_xlsx('aqi.xlsx')
+head(aqi)
+```
+
+Untuk melihat apakah tipe datanya sudah benar, dapat menggunakan
+```{r}
+sapply(aqi,class)
+```
+
+ataupun
+```{r}
+str(aqi)
+```
+
+Apakah tipe datanya sudah benar? jika belum, dapat diganti menggunakan
+```{r}
+aqi$`Tingkat Polusi`<-factor(aqi$`Tingkat Polusi`,levels=c('Good','Moderate','Unhealthy for Sensitive Groups','Unhealthy','Very Unhealthy','Hazardous'), ordered = TRUE)
+aqi$Cuaca<-factor(aqi$Cuaca, ordered = FALSE)
+```
+
+```{r}
+str(aqi)
+```
+
+```{r}
+is.ordered(aqi$Cuaca)
+is.ordered(aqi$`Tingkat Polusi`)
+```
+
+# Mengecek Missing Value
+
+## Apa itu Missing Value
+Missing Value dalah nilai yang hilang dari data
+
+## Penyebab Missing Value
+Mengapa terjadi missing value dapat disebabkan oleh berbagai macam hal:
+
+* Tidak tersedianya data mengenai observasi tersebut
+* Error dalam pengentrian data
+* Data yang corrupt
+
+Ataupun contoh lainnya pada data survey
+*	Responden lupa mengisi pertanyaan
+*	Responden mengosongkan pertanyaan karena pernyataan sulit dimengerti
+*	Responden enggan untuk mengisi pertanyaan yang sensitif
+
+## (Tidak Dibahas) Tipe Missing Value
+
+## Mengidentifikasi Missing Value
+Biasanya untuk menandakan bahwa suatu data hilang, cell tersebut dibiarkan kosong
+Nah, permasalahan yang dihadapi pada data di lapangan adalah, penandaan untuk mengatakan bahwa data tersebut missing sangat beragam, bisa ditulis ‘?’ (tanda tanya), bisa ditulis ‘-‘ (strip), bisa suatu bilangan yang sangat besar atau sangat kecil (misal 99 atau -999)
+
+### Study Case 1
+```{r}
+house<-read.csv("https://raw.githubusercontent.com/dataoptimal/posts/master/data%20cleaning%20with%20python%20and%20pandas/property%20data.csv")
+house
+```
+
+### Study Case 2
+
+```{r}
+diabetes<-read.csv('https://raw.githubusercontent.com/DevSurya/Pima-Diabetes-Prediction/master/data/pima-data.csv')
+sample_n(diabetes,10)
+```
+
+```{r}
+summary(diabetes)
+```
+
+```{r}
+diabetes[,c(2,3,4,5,6,9)][diabetes[,c(2,3,4,5,6,9)]==0]<-NA
+```
+```{r}
+vis_miss(diabetes)
+```
+
+```{r message=FALSE, warning=FALSE}
+gg_miss_upset(diabetes)
+```
+
+# Menghandle Missing Value (Tidak Dibahas)
+
+# Outlier & Penanganannya (Tidak Dibahas)
+
+# Visualisasi Data
+
+## Tujuan Visualisasi Data
+Manusia cenderung belajar dengan mudah dengan visual, bagaimana membuat visualisasi yang baik dan pewarnaan yang sesuai dapat mengungkap pola tersembunyi dan insight tambahan dalam EDA
+
+## Visualisasi Interaktif
+Visualisasi Interaktif dapat dengan mudah diterapkan di R, setelah membuat objek ggplot, kita hanya tinggal melakukan
+ggplotly(objek-ggplot)
+
+## Tipe-tipe grafik
+![](Illustration/Screenshot_1.png)
+
+### Inisialisasi
+```{r}
+options(scipen=999)  # turn-off scientific notation like 1e+48
+```
+
+## Data yang digunakan
+
+```{r}
+dim(gapminder)
+```
+
+```{r}
+summary(gapminder)
+```
+
+```{r}
+sample_n(gapminder,
+         10)
+```
+
+```{r}
+gapminder$lifeExpCat <- NA
+gapminder$lifeExpCat[gapminder$lifeExp < 50] <- "Below 50 Life Exp"
+gapminder$lifeExpCat[gapminder$lifeExp >= 50] <- "Above 50 Life Exp"
+gapminder_2007 <- gapminder %>% filter(year == 2007)
+gapminder_1952 <- gapminder %>% filter(year == 1952)
+```
+
+## Demonstrasi Bar Chart
+Barchart digunakan utamanya sebagai komparasi antara banyaknya jumlah/count pada variabel variabel kategorik pada Data
+
+### Bar Chart dasar
+Misalkan kita mau melihat banyaknya negara pada tiap benua
+```{r}
+ggplot(gapminder_2007,
+       aes(x = continent)) +
+  geom_bar()+
+  theme(legend.position="none")
+```
+
+### Penambahan Warna
+Agar visualisasi lebih menarik, alangkah baiknya diberikan warna yang berbeda untuk tiap benua agar tidak monoton
+```{r}
+ggplot(gapminder_2007,
+       aes(x = continent,
+           fill = continent)) +
+  geom_bar()+
+  theme(legend.position="none")
+```
+
+### Versi Horizontal
+Barchart ini juga dapat dibuat versi horizontalnya
+```{r}
+ggplot(gapminder_2007,
+       aes(x=continent,
+           fill=continent)) +
+  geom_bar() +
+  coord_flip() +
+  theme(legend.position = "none")
+```
+
+### Tips n Trik
+
+* Gunakan Barchart vertikal jika kategori yang diberikan masih sedikit, jika sudah banyak, lebih baik menggunakan versi horizontalnya
+* Jangan lupa untuk memastikan sumbu numeriknya dimulai dari 0, agar perbandingan tinggi / panjang antar kategori dapat dilakukan dengan adil (mata manusia cukup sensitif dengan tinggi)
+
+## Demonstrasi Stacked Bar Chart
+Stacked Bar Chart digunakan untuk melihat bagaimana komposisi komposisi pada suatu variabel kategorik di beberapa nilai yang berbeda.
+
+### Stacked Bar Chart (versi count)
+Misalnya kita ingin melihat banyaknya negara di tiap benua, namun dibedakan berdasarkan apakah negara tersebut mempunyai harapan hidup yang lebih dari 50 tahun apa tidak.
+
+Berikut kondisi negara negara tersebut pada tahun 1952
+```{r}
+g<-ggplot(gapminder_1952,aes(x=continent,fill=lifeExpCat))+geom_bar()
+ggplotly(g)
+```
+
+Berikut pada tahun 2007
+```{r}
+g<-ggplot(gapminder_2007,aes(x=continent,fill=lifeExpCat))+geom_bar()
+ggplotly(g)
+```
+
+### Stacked bar Chart (versi persentase)
+Jika fokus utamanya adalah berapa persen di tiap benua yang berada di bawah 50 tahun harapan hidupnya, dapat digunakan versi stacked bar chart yang fokus pada persentase
+```{r}
+g<-ggplot(gapminder_1952,aes(x=continent,fill=lifeExpCat))+geom_bar(position = "fill")
+h<-ggplot(gapminder_2007,aes(x=continent,fill=lifeExpCat))+geom_bar(position = "fill")
+ggplotly(g)
+ggplotly(h)
+```
+
+## Demonstrasi Histogram
+Histogram digunakan untuk melihat distribusi yang ada pada suatu data numerik
+
+### Histogram dasar
+Misalnya kita ingin melihat persebaran nilai harapan hidup pada seluruh negara pada tahun 1952 
+```{r message=FALSE, warning=FALSE}
+g<-ggplot(gapminder_1952,
+       aes(x = lifeExp))+
+  geom_histogram()
+ggplotly(g)
+```
+
+Dan pada tahun 2007
+```{r message=FALSE, warning=FALSE}
+g<-ggplot(gapminder_2007,
+       aes(x = lifeExp))+
+  geom_histogram()
+ggplotly(g)
+```
+
+### Membandingkan 2 histogram dalam satu frame
+Kita juga dapat membandingkan 2 histogram sekaligus dalam satu frame
+```{r message=FALSE, warning=FALSE}
+gapminder_before_after<-gapminder %>% filter(year %in% c(1952,2007))
+g<-ggplot(gapminder_before_after,
+          aes(x = lifeExp,
+              fill = as.factor(year)))+
+  geom_histogram(position = "identity")
+ggplotly(g)
+```
+
+```{r message=FALSE, warning=FALSE}
+gapminder_before_after<-gapminder %>% filter(year %in% c(1952,2007))
+g<-ggplot(gapminder_before_after,
+          aes(x = lifeExp,
+              fill = as.factor(year)))+
+  geom_histogram(position = "identity",alpha=0.3)
+ggplotly(g)
+```
+
+### Multiple Histogram dalam frame yang berbeda beda
+Jika ingin lebih fokus kepada bagaimana persebaran per kontinen nya, dapat juga menggambar histogram per kontinen
+```{r message=FALSE, warning=FALSE}
+g<-ggplot(gapminder_2007,
+       aes(x = lifeExp,
+           fill = continent)) +
+  geom_histogram() +
+  facet_wrap(~continent)
+ggplotly(g)
+```
+
+## Demonstrasi Boxplot
+Plot selanjutnya adalah Boxplot, Boxplot berfokus pada bagaimana jangkauan data
+```{r}
+g<-ggplot(gapminder_2007,
+       aes(y = lifeExp,
+           x = continent,
+           fill = continent)) +
+  geom_boxplot()
+ggplotly(g)
+```
+
+Versi horizontalnya
+```{r}
+g<-ggplot(gapminder_2007,
+       aes(y = lifeExp,
+           x = continent,
+           fill = continent)) +
+  geom_boxplot() +
+  coord_flip()
+ggplotly(g)
+```
+
+## Demonstrasi Densityplot
+```{r}
+g<-ggplot(gapminder_2007,
+       aes(x = lifeExp,
+           fill = continent,
+           alpha=0.1)) +
+  geom_density(aes())
+ggplotly(g)
+```
+
+## Demonstrasi Violinplot
+Violinplot dapat mempermudah kita melihat persebaran di beberapa kategori
+```{r}
+ggplot(gapminder_2007,
+       aes(y = lifeExp,
+           x = continent,
+           fill = continent)) +
+  geom_violin()
+```
+
+## Demonstrasi Violinplot + Boxplot
+Violinplot dan boxplot dapat digabungkan menjadi satu visualisasi yang ringkas
+```{r}
+ggplot(gapminder_2007,
+       aes(y = lifeExp,
+           x = continent,
+           fill = continent)) +
+  geom_violin() +
+  geom_boxplot(width=0.1)
+```
+
+## Demonstrasi Line Chart
+Line chart utamanya digunakan untuk melihat progress over time
+
+### Perkembangan negara
+Misal kita ingin melihat bagaimana perkembangan beberapa negara di ASEAN, misal Indonesia, Singapore, Malaysia, dan Thailang
+```{r}
+gapminder_asean <- gapminder %>% filter(country %in% c("Indonesia","Singapore","Malaysia","Thailand"))
+```
+
+Lalu kita mau lihat bagaimana perkembangan gdp pertahunnya
+```{r}
+g<-ggplot(gapminder_asean,aes(x=year,
+                              y=gdpPercap,
+                              color=country))+geom_line()
+ggplotly(g)
+```
+
+ataupun perkembangan harapan hidup
+```{r}
+g<-ggplot(gapminder_asean,aes(x=year,
+                              y=lifeExp,
+                              color=country))+geom_line()
+ggplotly(g)
+```
+
+maupun perkembangan populasi
+```{r}
+g<-ggplot(gapminder_asean,aes(x=year,
+                              y=pop,
+                              color=country))+geom_line()
+ggplotly(g)
+```
+
+Kita juga dapat merangkum yang lebih jauh, misalnya melihat perkembangan per benua, nah bagaimana merangkum nilai nilai yang ada pada benua? diperlukan suatu nilai yang cukup representatif menggambarkan keadaan benua tersebut, perhatikan demonstrasi berikut
+
+### Mean vs Median
+```{r message=FALSE, warning=FALSE}
+ggplot(gapminder_2007,
+       aes(x = gdpPercap)) +
+  geom_histogram() +
+  geom_vline(xintercept = mean(gapminder_1952$gdpPercap),colour="red")+
+  geom_vline(xintercept = median(gapminder_1952$gdpPercap), colour="blue")
+```
+
+Pada distribusi distribusi yang skewed, nilai mean akan sensitif terhadap kehadiran outlier.
+
+Misalnya jika diberikan data {2,3,4,3,4,7,2,3,3,100} akan memiliki rata rata sekitar 13, sebuah nilai yang kurang merepresentasikan data, karena mayoritas berada pada nilai satuan yang kecil.
+
+### Perkembangan Benua
+Mari kita coba rangkum bagaimana mean dan median tiap variabel pertahunnya berdasarkan benua
+```{r}
+gapminder_per_continent<-gapminder %>% dplyr::group_by(year,continent) %>% dplyr::summarise(median_gdp = median(gdpPercap),
+                                                                                            mean_gdp = mean(gdpPercap),
+                                                                                            median_lifeExp = median(lifeExp),
+                                                                                            mean_lifeExp = mean(lifeExp),
+                                                                                            median_pop = median(pop),
+                                                                                            mean_pop = mean(pop))
+gapminder_per_continent
+```
+
+Dapat dilihat bahwa mean dan median sangat berbeda jauh nilainya, dikarenakan memang data yang didapat cukup <em>right-skewed</em>
+
+Berikut bagaimana perkembangan per 5 tahun median gdp setiap benua
+```{r}
+g<-ggplot(gapminder_per_continent,
+       aes(x = year,
+           y = median_gdp,
+           color = continent)) +
+  geom_line()
+ggplotly(g)
+```
+
+Berikut perkembangan untuk populasi
+```{r}
+g<-ggplot(gapminder_per_continent,
+       aes(x = year,
+           y = median_pop,
+           color = continent)) +
+  geom_line()
+ggplotly(g)
+```
+
+Berikut perkembangan untuk ekspektasi hidup
+```{r}
+g<-ggplot(gapminder_per_continent,
+       aes(x = year,
+           y = median_lifeExp,
+           color = continent)) +
+  geom_line()
+ggplotly(g)
+```
+
+## Demonstrasi Scatterplot
+
+### Scatterplot dasar
+Kekuatan scatterplot berada pada melihat bagaimana hubungan antar dua variabel. Misal kita ingin melihat bagaimana hubungan antara gdp dengan ekspektasi hidup, apakah semakin besar pendapatan suatu negara, maka semakin besar harapan hidup penduduknya?
+```{r}
+ggplot(gapminder_2007,
+       aes(x=gdpPercap,
+           y=lifeExp)) + 
+  geom_point() + 
+  labs(subtitle="gdpPercap Vs lifeExp", 
+       x="gdpPercap", 
+       y="lifeExp", 
+       title="Scatterplot", 
+       caption = "Source: gapminder")
+```
+
+### Mengubah skala sumbu
+Untuk melihat pola yang lebih jauh, mungkin akan lebih baik jika skala x nya diubah, menjadi skala logaritmik
+```{r}
+ggplot(gapminder_2007,
+       aes(x=gdpPercap,
+           y=lifeExp)) + 
+  geom_point() + 
+  labs(subtitle="gdpPercap Vs lifeExp", 
+       x="gdpPercap", 
+       y="lifeExp", 
+       title="Scatterplot, Scale x log10", 
+       caption = "Source: gapminder") +
+  scale_x_log10()
+```
+
+### Pewarnaan titik
+Selain menunjukkan hubungan 2 variabel, scatterplot dapat ditambahkan variabel ketiga, yaitu pewarnaan berdasarkan variabel tertentu, misalnya kita mau membedakan berdasarkan benua
+```{r}
+ggplot(gapminder_2007,
+       aes(x=gdpPercap,
+           y=lifeExp)) + 
+  geom_point(aes(col=continent)) + 
+  labs(subtitle="gdpPercap Vs lifeExp", 
+       x="gdpPercap", 
+       y="lifeExp", 
+       title="Scatterplot, Scale x log 10, colored by continent", 
+       caption = "Source: gapminder") +
+  scale_x_log10()
+```
+
+## Demonstrasi Bubbleplot
+Bubbpleplot adalah scatterplot dengan besar titik yang beragam, besarnya titik tersebut dapat diatur dengan variabel lainnya, yang secara tidak langsung kita menambahkan variabel ke empat pada gambar, misalnya kita mau membedakan besarnya titik berdasarkan populasi
+```{r}
+ggplot(gapminder_2007, 
+       aes(x=gdpPercap,
+           y=lifeExp)) + 
+  geom_point(aes(col=continent,
+                 size=pop)) + 
+  labs(subtitle="gdpPercap Vs lifeExp", 
+       x="gdpPercap", 
+       y="lifeExp", 
+       title="Bubbleplot, Scale x log 10, colored by continent", 
+       caption = "Source: gapminder") +
+  scale_x_log10()
+```
+
+## Demonstrasi Bubbleplot interaktif
+Nah, visualisasi interaktif sangat membantu kita dalam mengeksplor lebih jauh dari presentasi yang kita buat
+```{r}
+g<-ggplot(gapminder_2007, 
+          aes(x=gdpPercap,
+              y=lifeExp,
+              label=country)) + 
+  geom_point(aes(col=continent,
+                 size=pop)) + 
+  labs(subtitle="gdpPercap Vs lifeExp", 
+       x="gdpPercap", 
+       y="lifeExp", 
+       title="Bubbleplot, Scale x log 10, colored by continent", 
+       caption = "Source: gapminder") +
+  scale_x_log10()
+ggplotly(g)
+```
+
+### Menambahkan garis regresi
+Kita dapat juga menggambarkan garis regresi linear pada data
+```{r message=FALSE, warning=FALSE}
+g<-ggplot(gapminder_2007,
+          aes(x=gdpPercap,
+              y=lifeExp,
+              label=country)) + 
+  geom_point(aes(col=continent,
+                 size=pop)) + 
+  geom_smooth(method="lm",
+              formula = "y~log(x)")
+  labs(subtitle="gdpPercap Vs lifeExp", 
+       x="gdpPercap", 
+       y="lifeExp", 
+       title="Bubbleplot , Scale x log 10, colored by continent", 
+       caption = "Source: gapminder") +
+  scale_x_log10()
+ggplotly(g)
+```
+
+### Garis regresi per benua
+```{r message=FALSE, warning=FALSE}
+g<-ggplot(gapminder_2007,
+          aes(x=gdpPercap,
+              y=lifeExp,
+              label=country)) + 
+  geom_point(aes(col=continent,
+                 size=pop)) + 
+  geom_smooth(aes(col=continent),
+              method="lm",
+              formula = "y~log(x)",
+              se=F,
+              fullrange=T)
+  labs(subtitle="gdpPercap Vs lifeExp", 
+       x="gdpPercap", 
+       y="lifeExp", 
+       title="Bubbleplot, Scale x log 10, colored by continent", 
+       caption = "Source: gapminder") +
+  scale_x_log10()
+ggplotly(g)
+```
+
+## Animasi Bubbple Plot
+```{r}
+g<-ggplot(gapminder,
+          aes(x=gdpPercap,
+              y=lifeExp,
+              label=country,
+              frame=year)) + 
+  geom_point(aes(col=continent,
+                 size=pop)) +
+  labs(subtitle="gdpPercap Vs lifeExp", 
+       x="gdpPercap", 
+       y="lifeExp", 
+       title="Bubbleplot over the year", 
+       caption = "Source: gapminder") +
+  scale_x_log10()
+ggplotly(g)
+```
+
+### animasi garis regresi
+```{r}
+g<-ggplot(gapminder,
+          aes(x=gdpPercap,
+              y=lifeExp,
+              label=country,
+              frame=year)) + 
+  geom_point(aes(col=continent,
+                 size=pop)) +
+  geom_smooth(aes(col=continent),
+              method="lm",
+              formula = "y~log(x)",
+              se=F) +
+  labs(subtitle="gdpPercap Vs lifeExp", 
+       x="gdpPercap", 
+       y="lifeExp", 
+       title="Bubbleplot over the year with regression line", 
+       caption = "Source: gapminder") +
+  scale_x_log10()
+ggplotly(g)
+```
+
+# Uncommon type of Visualization
+
+## Diverging Bars
+```{r}
+gapminder_asia_2007 <- gapminder %>% filter(year==2007 & continent == "Asia")
+gapminder_asia_2007$gdp_z <- round((gapminder_asia_2007$gdpPercap - mean(gapminder_asia_2007$gdpPercap))/sd(gapminder_asia_2007$gdpPercap), 2)  # compute normalized gdpPercap
+gapminder_asia_2007$gdp_type <- ifelse(gapminder_asia_2007$gdp_z < 0, "below", "above")  # above / below avg flag
+gapminder_asia_2007 <- gapminder_asia_2007[order(gapminder_asia_2007$gdp_z), ]  # sort
+gapminder_asia_2007$country <- factor(gapminder_asia_2007$country, levels = gapminder_asia_2007$country)  # convert to factor to retain sorted order in plot.
+
+# Diverging Barcharts
+g<-ggplot(gapminder_asia_2007, aes(x=country, y=gdp_z, label=gdpPercap)) + 
+  geom_bar(stat='identity', aes(fill=gdp_type), width=.5)  +
+  scale_fill_manual(name="Mileage", 
+                    labels = c("Above Average", "Below Average"), 
+                    values = c("above"="#00ba38", "below"="#f8766d")) + 
+  labs(subtitle="Normalised gdp from 'gapminder'", 
+       title= "Diverging Bars") + 
+  coord_flip()
+ggplotly(g)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+gapminder_lifeExp_asia_before_after <- gapminder %>% filter(continent == "Asia" & year %in% c(1952,2007)) %>% select(-c(continent,pop,gdpPercap,lifeExpCat))
+
+gapminder_lifeExp_asia_before_after <- spread(gapminder_lifeExp_asia_before_after, key = year, value = lifeExp)
+colnames(gapminder_lifeExp_asia_before_after) <- c("country","year_1952","year_2007")
+
+gapminder_lifeExp_asia_before_after <- gapminder_lifeExp_asia_before_after[order(gapminder_lifeExp_asia_before_after$year_1952), ]  # sort
+gapminder_lifeExp_asia_before_after$country <- factor(gapminder_lifeExp_asia_before_after$country, levels = gapminder_lifeExp_asia_before_after$country)  # convert to factor to 
+gapminder_lifeExp_asia_before_after$diff <- gapminder_lifeExp_asia_before_after$year_2007 - gapminder_lifeExp_asia_before_after$year_1952
+
+dumbbell_lifeExp_Asia <- plot_ly(gapminder_lifeExp_asia_before_after, color = I("gray80"),  
+                hoverinfo = 'text') %>%
+  add_segments(x = ~year_2007, xend = ~year_1952, y = ~country, yend = ~country, showlegend = FALSE) %>%
+  add_markers(x = ~year_2007, y = ~country, name = "Life Exp year 2007",color='red', text=~paste('Life Exp year 2007: ', year_2007)) %>%
+  add_markers(x = ~year_1952, y = ~country, name = "Life Exp year 1952",color='blue', text=~paste('Life Exp year 1952: ', year_1952))%>%
+  layout(
+    title = "Life Exp Before After",
+    xaxis = list(title = "Life Exp"),
+    yaxis= list(title=""))
+ggplotly(dumbbell_lifeExp_Asia)
+```
